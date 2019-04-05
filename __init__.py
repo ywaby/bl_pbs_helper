@@ -1,37 +1,20 @@
 # Copyright (C) 2019 ywabygl@gmail.com
-# 
+#
 # PBS Helper is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PBS Helper is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with PBS Helper. If not, see <http://www.gnu.org/licenses/>.
-
-
-bl_info = {
-    "name" : "PBS Helper",
-    "author" : "ywaby",
-    "version": (0, 0, 2),
-    "description": "shader bake"
-                    'material merge'
-                    'pbr paint helper',
-    "blender" : (2, 80, 0),
-    "location" : "Shader Node->Properties",
-    "warning" : "",
-    "tracker_url": "http://github.com/pbr_helper/issue",
-    "wiki_url": "http://github.com/pbr_helper/wiki",
-    "support": "TESTING",
-    "category": "Node"
-}
-import bpy
-from os import path
-from mathutils import Color
+from .ui import UI
+from .material_bake import BakeMaterial
+#from .paint import Paint2Node
 from bpy.props import (
     BoolProperty,
     EnumProperty,
@@ -48,53 +31,63 @@ from bpy.types import (
     PropertyGroup,
     AddonPreferences,
 )
+from os import path
+from mathutils import Color
+import bpy
 
-# pbr generate env init
-class UI(bpy.types.Panel):
-    bl_space_type = 'NODE_EDITOR'
-    bl_label = "pbr helper"
-    bl_category = 'Properties'
-    bl_region_type = 'PROPERTIES'
-    bl_idname = 'pbr_helper.bake'
-    bl_options = {'DEFAULT_CLOSED'}
+bl_info = {
+    "name": "PBS Helper",
+    "author": "ywaby",
+    "version": (0, 0, 2),
+    "description": "shader bake"
+    'material merge'
+    'pbr paint helper',
+    "blender": (2, 80, 0),
+    "location": "Shader Node->Properties",
+    "warning": "",
+    "tracker_url": "http://github.com/pbr_helper/issue",
+    "wiki_url": "http://github.com/pbr_helper/wiki",
+    "support": "TESTING",
+    "category": "Node"
+}
 
-    def draw(self, context):
-        layout = self.layout
-        col = layout.col
-        col = layout.col
 
 class auto_rotate_light(bpy.types.Operator):
     '''preivew light rotate around active object'''
     pass
 
+
 def init_addon():
-    # addon preference
-    # check and init env for bake
-    # cycle engine
-    # autopack image
     addon_dir = path.dirname(__file__)
     data = path.join(addon_dir, "./data.blend")
 
-class PBS_Helper(bpy.types.AddonPreferences):
+
+class Preferences(bpy.types.AddonPreferences):
     bl_idname = __name__
-    sync_paint_node:BoolProperty(
-        name='Sync Node Paint',
+    sync_paint_node: BoolProperty(
+        name='Paint To Node',
         default=True,
-        description='Sync Active Shader Node With Paint Texture'
+        description='Paint to Active Node'
     )
+    auto_save_image: BoolProperty(
+        name='Auto Save Image',
+        default=True,
+        description=''
+    )
+
     def draw(self, context):
-            layout = self.layout
-            col = layout.column()
-            col.prop(self, "sync_paint_node")
+        layout = self.layout
+        row = layout.row()
+        row.prop(self, "sync_paint_node")
+        row.prop(self, "auto_save_image")
 
 
-from .material_bake import BakeMaterial
-from .paint import Paint2Node
-
-classes = (
+classes = [
     BakeMaterial,
-    Paint2Node
-)
+    # Paint2Node,
+    UI,
+    Preferences
+]
 
 def register():
     for cls in classes:
@@ -104,4 +97,3 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-

@@ -51,7 +51,6 @@ class BakeMaterial(Operator):
     '''bake texture from a material'''
     bl_label = "Bake A Material "  # 默认text，空格搜索命令
     bl_idname = "pbs_helper.bake"  # id，脚本调用,必须为a.b的格式
-    bl_options = {'REGISTER', 'UNDO'}  # 允许undo
     COMPAT_ENGINES = {'CYCLES'}
 
     @classmethod
@@ -145,7 +144,7 @@ class BakeMaterial(Operator):
                                 from_node.inputs[2], False)
             elif from_node.bl_idname == 'ShaderNodeBsdfPrincipled':
                 convert_node = self.nodes.new('ShaderNodeVectorMath')
-                convert_node.inputs[1].default_value = Vector(0,0,0)
+                convert_node.inputs[1].default_value = Vector((0,0,0))
                 copy_output(convert_node.outputs['Vector'], link)
                 self.copy_input(convert_node.inputs[0],
                                 from_node.inputs[bake_socket.name],False)

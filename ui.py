@@ -13,15 +13,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with PBS Helper. If not, see <http://www.gnu.org/licenses/>.
 
-'''
-helper for PBR paint workflow
-'''
 from bpy.types import (
-    Operator,
-    PropertyGroup,
-    AddonPreferences,
-    ShaderNodeGroup
+    Panel,
 )
+
 from bpy.props import (
     BoolProperty,
     EnumProperty,
@@ -32,7 +27,16 @@ from bpy.props import (
     StringProperty,
 )
 
-# brush lib
-class Paint2Node(Operator):
-    '''sync paint texture with active node'''
-    pass
+class UI(Panel):
+    bl_space_type = 'NODE_EDITOR'
+    bl_label = "PBS Helper"
+    bl_category = 'PBS Helper'
+    bl_region_type = 'UI'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        row=layout.row()
+        row.label(text="Hello World")
+        row=layout.row()
+        row.operator("pbs_helper.bake")

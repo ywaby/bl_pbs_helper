@@ -113,3 +113,4 @@ doc/
 .vscode/
 .pylintrc
 test/
+dist/
