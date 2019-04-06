@@ -1,17 +1,19 @@
 # Copyright (C) 2019 ywabygl@gmail.com
-# 
+#
 # PBS Helper is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PBS Helper is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with PBS Helper. If not, see <http://www.gnu.org/licenses/>.
+
+# bake a material to simple pbr material
 
 from bpy.types import (
     Operator,
@@ -28,11 +30,8 @@ from bpy.props import (
     PointerProperty,
     StringProperty,
 )
-from mathutils import Color,Vector
+from mathutils import Color, Vector
 import bpy
-'''
-bake a material to simple pbr material
-'''
 
 
 class Preset():
@@ -46,19 +45,67 @@ class Preset():
     def save(self):
         pass
 
+    def pbr_gen_init(self):
+        pass
+        # load mat
+        # load demo object if not exist
+        # bpy.context.screen.scene = bpy.data.scenes['PBR GEN'] #
+
+
+class AddImageBake(Operator):
+    '''add godot bake preset'''
+    bl_label = "Add A Image Bake Node"  # 默认text，空格搜索命令
+    bl_idname = "pbs_helper.add_image_bake"  # id，脚本调用,必须为a.b的格式
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return (obj and
+                obj.active_material and
+                context.area.type="NODE_EDITOR")
+
+    def execute(self, context):
+        bpy.ops.node.add_node('INVOKE_DEFAULT',
+                              type="ShaderNodeTexImage",
+                              use_transform=True,
+                              settings=[{"name": "is_image_bake", "value": "True"}])
+        return {"FINISHED"}
+
+
+class AddGodotPreset(Operator):
+    '''add godot bake preset'''
+    bl_label = "Bake A Material "  # 默认text，空格搜索命令
+    bl_idname = "pbs_helper.bake"  # id，脚本调用,必须为a.b的格式
+    new_image = BoolProperty()
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return (obj and
+                obj.active_material and
+                context.area.type="NODE_EDITOR")
+
+    def execute(self, context):
+        self.obj = context.active_object
+        self.orign_mat = self.obj.active_material
+        # append node group
+        # ungroup
+        # new image for each bake node in group
+        #name = node .newname
+
 
 class BakeMaterial(Operator):
     '''bake texture from a material'''
     bl_label = "Bake A Material "  # 默认text，空格搜索命令
     bl_idname = "pbs_helper.bake"  # id，脚本调用,必须为a.b的格式
-    COMPAT_ENGINES = {'CYCLES'}
 
     @classmethod
     def poll(cls, context):
-        return context.object is not None
+        obj = context.active_object
+        return (obj and
+                obj.active_material and
+                context.scene.render.engine == 'CYCLES')
 
     def execute(self, context):
-        self.obj = bpy.context.active_object
+        self.obj = context.active_object
         self.orign_mat = self.obj.active_material
         self.mat = self.orign_mat.copy()
         self.obj.active_material = self.mat
@@ -123,10 +170,10 @@ class BakeMaterial(Operator):
                                 from_node.inputs[2], False)
             elif from_node.bl_idname == 'ShaderNodeBsdfPrincipled':
                 convert_node = self.nodes.new('ShaderNodeVectorMath')
-                convert_node.inputs[1].default_value = Vector((0,0,0))
+                convert_node.inputs[1].default_value = Vector((0, 0, 0))
                 copy_output(convert_node.outputs['Vector'], link)
                 self.copy_input(convert_node.inputs[0],
-                                from_node.inputs[bake_socket.name],False)
+                                from_node.inputs[bake_socket.name], False)
             elif from_node.outputs[0].type == 'SHADER':
                 self.links.remove(link)
                 return
@@ -144,10 +191,10 @@ class BakeMaterial(Operator):
                                 from_node.inputs[2], False)
             elif from_node.bl_idname == 'ShaderNodeBsdfPrincipled':
                 convert_node = self.nodes.new('ShaderNodeVectorMath')
-                convert_node.inputs[1].default_value = Vector((0,0,0))
+                convert_node.inputs[1].default_value = Vector((0, 0, 0))
                 copy_output(convert_node.outputs['Vector'], link)
                 self.copy_input(convert_node.inputs[0],
-                                from_node.inputs[bake_socket.name],False)
+                                from_node.inputs[bake_socket.name], False)
             elif from_node.outputs[0].type == 'SHADER':
                 self.links.remove(link)
                 return
@@ -224,7 +271,7 @@ class BakeMaterial(Operator):
     def bake_images(self):
         bake_image_nodes = [node for node in self.nodes
                             if node.bl_idname == 'ShaderNodeTexImage' and
-                            node.label == 'Image Bake']
+                            node.is_bake_image]
         emit_node = self.nodes.new('ShaderNodeEmission')
         self.links.new(emit_node.outputs['Emission'],
                        self.output_node.inputs['Surface'])
@@ -260,24 +307,3 @@ class BakeMaterial(Operator):
                                 bake_image_node.inputs[0])
                 self.nodes.active = bake_image_node
                 bpy.ops.object.bake(type='EMIT')
-
-
-classes = (
-    BakeMaterial,
-)
-
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
-
-
-def unregister():
-    for cls in reversed(classes):
-        bpy.utils.unregister_class(cls)
-
-
-# for test
-if __name__ == "__main__":
-    register()
-    bpy.ops.pbs_helper.bake()

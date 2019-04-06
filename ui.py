@@ -26,17 +26,24 @@ from bpy.props import (
     PointerProperty,
     StringProperty,
 )
-
-class UI(Panel):
+class PBS_HELPER_PT_panel(Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_label = "PBS Helper"
     bl_category = 'PBS Helper'
     bl_region_type = 'UI'
-    bl_options = {'DEFAULT_CLOSED'}
+    bl_options = {'HIDE_HEADER'}
+    COMPAT_ENGINES = {'CYCLES'}
 
     def draw(self, context):
+        obj = context.active_object
+        mat = obj.active_material
+        tree = mat.node_tree
+        nodes = tree.nodes
         layout = self.layout
         row=layout.row()
-        row.label(text="Hello World")
         row=layout.row()
         row.operator("pbs_helper.bake")
+        node = nodes.active
+        if node and node.bl_idname=='ShaderNodeTexImage':
+            row=layout.row()
+            row.prop(node,'is_image_bake')

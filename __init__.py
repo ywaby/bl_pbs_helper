@@ -12,8 +12,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with PBS Helper. If not, see <http://www.gnu.org/licenses/>.
-from .ui import UI
-from .material_bake import BakeMaterial
+from .ui import PBS_HELPER_PT_panel
+from .material_bake import BakeMaterial,AddImageBake
 #from .paint import Paint2Node
 from bpy.props import (
     BoolProperty,
@@ -60,8 +60,10 @@ class auto_rotate_light(bpy.types.Operator):
 def init_addon():
     addon_dir = path.dirname(__file__)
     data = path.join(addon_dir, "./data.blend")
-
-
+    # link workspace not work as need to oprater
+    # if 'PBR' not in bpy.data.workspaces.keys():
+        # bpy.ops.wm.link(directory="./data.blend/WorkSpace", filename="PBR",relative_path=True)
+        
 class Preferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     sync_paint_node: BoolProperty(
@@ -74,26 +76,36 @@ class Preferences(bpy.types.AddonPreferences):
         default=True,
         description=''
     )
-
+    user_data : StringProperty(name='User Data file(*.blend)',subtype='FILE_PATH',description='default is addon data.blend')
     def draw(self, context):
         layout = self.layout
         row = layout.row()
         row.prop(self, "sync_paint_node")
         row.prop(self, "auto_save_image")
-
+        row = layout.row()
+        row.prop(self, "user_data")
 
 classes = [
     BakeMaterial,
+    AddImageBake,
     # Paint2Node,
-    UI,
+    PBS_HELPER_PT_panel,
     Preferences
 ]
 
+def add_image_bake(self, context):
+    bake_node=self.layout.operator(AddImageBake.bl_idname,
+                        text = "Image Bake")
+
 def register():
+    bpy.types.ShaderNodeTexImage.is_image_bake=BoolProperty(name='Is Image Bake',default=False)
     for cls in classes:
         bpy.utils.register_class(cls)
-
+    init_addon()
+    bpy.types.NODE_MT_add.append(add_image_bake)
 
 def unregister():
+    bpy.types.NODE_MT_add.remove(add_image_bake)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    del bpy.types.ShaderNodeTexImage.is_image_bake
