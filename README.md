@@ -21,6 +21,12 @@ improve render speed
 - disable modify
 - fast cycle render settings
 
+## install
+install application templete
+install addon
+
+https://docs.blender.org/manual/en/latest/preferences/addons.html
+
 ## workflow
 ### generate pbr texture from image
 append generate scene

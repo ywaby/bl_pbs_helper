@@ -34,24 +34,6 @@ from mathutils import Color, Vector
 import bpy
 
 
-class Preset():
-    # option
-    # preset godot unity bake output# new material for preview
-    # create image size， base name
-    # custom preset name
-    def load(self):
-        pass
-
-    def save(self):
-        pass
-
-    def pbr_gen_init(self):
-        pass
-        # load mat
-        # load demo object if not exist
-        # bpy.context.screen.scene = bpy.data.scenes['PBR GEN'] #
-
-
 class AddImageBake(Operator):
     '''add godot bake preset'''
     bl_label = "Add A Image Bake Node"  # 默认text，空格搜索命令
@@ -61,7 +43,7 @@ class AddImageBake(Operator):
         obj = context.active_object
         return (obj and
                 obj.active_material and
-                context.area.type="NODE_EDITOR")
+                context.area.type == "NODE_EDITOR")
 
     def execute(self, context):
         bpy.ops.node.add_node('INVOKE_DEFAULT',
@@ -69,27 +51,6 @@ class AddImageBake(Operator):
                               use_transform=True,
                               settings=[{"name": "is_image_bake", "value": "True"}])
         return {"FINISHED"}
-
-
-class AddGodotPreset(Operator):
-    '''add godot bake preset'''
-    bl_label = "Bake A Material "  # 默认text，空格搜索命令
-    bl_idname = "pbs_helper.bake"  # id，脚本调用,必须为a.b的格式
-    new_image = BoolProperty()
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return (obj and
-                obj.active_material and
-                context.area.type="NODE_EDITOR")
-
-    def execute(self, context):
-        self.obj = context.active_object
-        self.orign_mat = self.obj.active_material
-        # append node group
-        # ungroup
-        # new image for each bake node in group
-        #name = node .newname
 
 
 class BakeMaterial(Operator):
