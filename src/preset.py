@@ -9,6 +9,7 @@ from bpy.props import (
     IntProperty,
     PointerProperty,
     StringProperty,
+    CollectionProperty
 )
 from bpy.types import (
     Operator,
@@ -35,25 +36,36 @@ class PBS_HELPER_MT_add_presets(Menu):
     preset_operator = 'pbs_helper.use_preset'  # run preset
     preset_extensions = {'.blend'}
 
-
 class PBS_HELPER_PT_presets_manager(Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_label = "Preset Manager"
     bl_category = 'PBS Helper'
+    preset_subdir = PRESET_SUBDIR
     bl_region_type = 'UI'
+    act_idx: IntProperty()
+    ext = '.blend'
     @classmethod
     def poll(cls, context):
         # area is shadernode and active_material!=None
         return True
 
     def draw(self, context):
+        files = []
+        search_paths=bpy.utils.preset_paths(self.preset_subdir)
+        for search_path in search_paths:
+            files.extend([os.path.splitext(os.path.basename(path))[0]
+                 for path in os.listdir(search_path) if path.endswith(self.ext)])
         layout = self.layout
-        row = layout.row(align=True)
-        row.menu("PBS_HELPER_MT_preset")
-        row.operator('pbs_helper.preset_add', text="", icon='ADD')
-        row.operator('pbs_helper.preset_add', text="",
-                     icon='REMOVE').remove_active = True
-
+        row=layout.row()
+        del_ops=row.operator('pbs_helper.preset_add',text='',icon='ADD')
+        box=layout.box()
+        row = box.row(align=True)
+        for f in files:
+            row = box.row(align=True)
+            row.label(text=f)
+            del_ops=row.operator('pbs_helper.preset_add',text='',icon='REMOVE')
+            del_ops.remove_active=True
+            del_ops.name=f
 
 class PBS_HELPER_MT_preset(Menu):
     """preset menu by finding all preset files in the preset directory"""
@@ -62,7 +74,7 @@ class PBS_HELPER_MT_preset(Menu):
     draw = Menu.draw_preset
     preset_operator = 'pbs_helper.use_preset'  # run preset
     preset_extensions = {'.blend'}
-    
+
 
 class UsePreset(ExecutePreset):
     bl_idname = "pbs_helper.use_preset"
@@ -72,11 +84,12 @@ class UsePreset(ExecutePreset):
         subtype='FILE_PATH',
         options={'SKIP_SAVE'},
     )
-    menu_idname : StringProperty(
-            name="Menu ID Name",
-            description="ID name of the menu this was called from",
-            options={'SKIP_SAVE'},
-            )
+    menu_idname: StringProperty(
+        name="Menu ID Name",
+        description="ID name of the menu this was called from",
+        options={'SKIP_SAVE'},
+    )
+
     @classmethod
     def poll(cls, context):
         obj = context.active_object
@@ -85,8 +98,6 @@ class UsePreset(ExecutePreset):
                 context.area.type == "NODE_EDITOR")
 
     def execute(self, context):
-        preset_class = getattr(bpy.types, self.menu_idname)
-        preset_class.bl_label = bpy.path.display_name(basename(self.filepath))
         obj = context.active_object
         mat = obj.active_material
         # append data
@@ -104,7 +115,7 @@ class UsePreset(ExecutePreset):
         return {'FINISHED'}
 
 
-class AddPreset(AddPresetBase, Operator):
+class AddPreset(Operator):
     """add preset to library"""
     bl_label = "Add Preset"
     bl_idname = "pbs_helper.preset_add"
@@ -120,23 +131,22 @@ class AddPreset(AddPresetBase, Operator):
         default=False,
         options={'HIDDEN', 'SKIP_SAVE'},
     )
-    remove_name: BoolProperty(
-        default=False,
-        options={'HIDDEN', 'SKIP_SAVE'},
-    )
     ext = '.blend'
     # TODO use when is possible use PointerProperty
     mat_name: StringProperty(name="Preview Material")
     node_name: StringProperty(name="bake node_group  ")
+
     def __init__(self):
         try:
-            mat=bpy.context.active_object.active_material
-            node=mat.node_tree.nodes.active
-            if node.bl_idname=='ShaderNodeGroup':
-                self.node_name=node.node_tree.name
-        except:pass
+            mat = bpy.context.active_object.active_material
+            node = mat.node_tree.nodes.active
+            if node.bl_idname == 'ShaderNodeGroup':
+                self.node_name = node.node_tree.name
+        except:
+            pass
 
     def execute(self, context):
+        if self.name=='':return {'CANCELLED'}
         if not self.remove_active:
             if self.node_name == '':
                 return {'CANCELLED'}
@@ -150,13 +160,11 @@ class AddPreset(AddPresetBase, Operator):
                 data_blocks.append(mat)
             bpy.data.libraries.write(filepath, set(data_blocks))
         else:
-            preset_menu_class = getattr(bpy.types, self.preset_menu)
-            preset_active = preset_menu_class.bl_label
-            filepath = bpy.utils.preset_find(preset_active,
+            filepath = bpy.utils.preset_find(self.name,
                                              self.preset_subdir,
                                              ext=self.ext)
             if not filepath:
-                filepath = bpy.utils.preset_find(preset_active,
+                filepath = bpy.utils.preset_find(self.name,
                                                  self.preset_subdir,
                                                  display_name=True,
                                                  ext=self.ext)
@@ -181,12 +189,18 @@ class AddPreset(AddPresetBase, Operator):
         row.prop_search(self, "mat_name", bpy.data, "materials")
         row = layout.row()
         row.prop_search(self, "node_name", bpy.data, "node_groups")
+    def invoke(self, context, event):
+        if not self.remove_active:
+            wm = context.window_manager
+            return wm.invoke_props_dialog(self)
+        else:
+            return self.execute(context)
 
 
 classes = [AddPreset,
            PBS_HELPER_MT_add_presets,
            PBS_HELPER_MT_preset,
-           PBS_HELPER_PT_presets_manager,
+           PBS_HELPER_PT_presets_manager, 
            UsePreset]
 
 

@@ -19,11 +19,17 @@ class install(BaseNode):
         if os.path.exists(target):
             os.remove(target)
         os.symlink(src, target)
+
+        src = os.path.abspath("./preset/pbs_helper")
+        target = os.path.expanduser("~/.config//blender/2.80/scripts/presets/pbs_helper")
+        if os.path.exists(target):
+            shutil.rmtree(target)
+        os.symlink(src, target)        
+
 class clear(BaseNode):
     '''clear dist'''
     def action(self):
-        if os.path.exists('./dist'):
-            shutil.rmtree("./dist")
+        shutil.copytree('~/.config/blender/2.80/scripts/presets/pbs_helper/bake_type', './preset/pbs_helper/preset')
 
 class package(BaseNode):
     """package prject to release file (zip)"""
