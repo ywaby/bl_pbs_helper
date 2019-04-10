@@ -106,7 +106,6 @@ venv.bak/
 
 
 doc/
-*.blend
 *.blend[0-9]
 *.zip
 *.png
