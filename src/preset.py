@@ -1,5 +1,5 @@
 
-import os  
+from bl_operators.presets import AddPresetBase, ExecutePreset
 from bl_operators.presets import AddPresetBase
 from bpy.props import (
     BoolProperty,
@@ -18,6 +18,8 @@ from bpy.types import (
     AddonPreferences,
 )
 import bpy
+import os
+
 PRESET_SUBDIR = "pbs_helper/bake_type"
 
 
@@ -39,7 +41,6 @@ class PBS_HELPER_PT_presets_manager(Panel):
     bl_label = "Preset Manager"
     bl_category = 'PBS Helper'
     bl_region_type = 'UI'
-    # bl_options = {'HIDE_HEADER'}
     @classmethod
     def poll(cls, context):
         # area is shadernode and active_material!=None
@@ -61,9 +62,9 @@ class PBS_HELPER_MT_preset(Menu):
     draw = Menu.draw_preset
     preset_operator = 'pbs_helper.use_preset'  # run preset
     preset_extensions = {'.blend'}
+    
 
-
-class UsePreset(Operator):
+class UsePreset(ExecutePreset):
     bl_idname = "pbs_helper.use_preset"
     bl_label = "Execute a Python Preset"
 
@@ -71,6 +72,11 @@ class UsePreset(Operator):
         subtype='FILE_PATH',
         options={'SKIP_SAVE'},
     )
+    menu_idname : StringProperty(
+            name="Menu ID Name",
+            description="ID name of the menu this was called from",
+            options={'SKIP_SAVE'},
+            )
     @classmethod
     def poll(cls, context):
         obj = context.active_object
@@ -79,6 +85,8 @@ class UsePreset(Operator):
                 context.area.type == "NODE_EDITOR")
 
     def execute(self, context):
+        preset_class = getattr(bpy.types, self.menu_idname)
+        preset_class.bl_label = bpy.path.display_name(basename(self.filepath))
         obj = context.active_object
         mat = obj.active_material
         # append data
@@ -89,7 +97,6 @@ class UsePreset(Operator):
         node_group = data_to.node_groups[0]
         bpy.ops.node.add_node('INVOKE_DEFAULT',
                               type="ShaderNodeGroup",
-                              # use_transform=True
                               )
         mat.node_tree.nodes.active.node_tree = node_group
         bpy.ops.node.group_ungroup()
@@ -118,9 +125,16 @@ class AddPreset(AddPresetBase, Operator):
         options={'HIDDEN', 'SKIP_SAVE'},
     )
     ext = '.blend'
-    # TODO when is possible use PointerProperty
+    # TODO use when is possible use PointerProperty
     mat_name: StringProperty(name="Preview Material")
     node_name: StringProperty(name="bake node_group  ")
+    def __init__(self):
+        try:
+            mat=bpy.context.active_object.active_material
+            node=mat.node_tree.nodes.active
+            if node.bl_idname=='ShaderNodeGroup':
+                self.node_name=node.node_tree.name
+        except:pass
 
     def execute(self, context):
         if not self.remove_active:
@@ -165,6 +179,7 @@ class AddPreset(AddPresetBase, Operator):
         layout.prop(self, "name")
         row = layout.row()
         row.prop_search(self, "mat_name", bpy.data, "materials")
+        row = layout.row()
         row.prop_search(self, "node_name", bpy.data, "node_groups")
 
 
