@@ -37,10 +37,14 @@ blender --background -P install.py -U
 
 ## usage
 templete
+
 image bake
+
 shader bake
-### add preset
+
+### preset
 use preset img
+
 preset manager img
 add preset
 1. make ..

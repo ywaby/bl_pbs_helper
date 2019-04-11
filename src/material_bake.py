@@ -32,6 +32,7 @@ from bpy.props import (
 )
 from mathutils import Color, Vector
 import bpy
+import os
 
 class BakeMaterial(Operator):
     '''bake texture from a material'''
@@ -40,12 +41,17 @@ class BakeMaterial(Operator):
 
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        return (obj and
-                obj.active_material and
+        space = context.space_data
+        return (space.type == 'NODE_EDITOR' and
+                space.tree_type == 'ShaderNodeTree' and
+                space.shader_type == 'OBJECT' and
+                space.node_tree and
                 context.scene.render.engine == 'CYCLES')
 
     def execute(self, context):
+        obj=context.active_object
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
         data_path = os.path.join(os.path.dirname(__file__), 'data.blend')  # TODO to be func load all
         with bpy.data.libraries.load(data_path, link=True) as (data_from, data_to):
             data_to.node_groups = data_from.node_groups
@@ -67,7 +73,7 @@ class BakeMaterial(Operator):
         return{'FINISHED'}
 
     def mix_alpha(self, merge_image, alpha_image):
-        pixels = merge_image.pixels[:]
+        pixels = list(merge_image.pixels)#[:]
         alpha_pixels = alpha_image.pixels[:]
         for i in range(3, len(pixels), 4):  # TODO use numpy for faster
             pixels[i] = alpha_pixels[i-3]
@@ -114,6 +120,7 @@ class BakeMaterial(Operator):
                                 from_node.inputs[2], False)
             elif from_node.bl_idname == 'ShaderNodeBsdfPrincipled':
                 convert_node = self.nodes.new('ShaderNodeVectorMath')
+                convert_node.inputs[0].default_value = Vector((0.216, 0.216, 1.0))
                 convert_node.inputs[1].default_value = Vector((0, 0, 0))
                 copy_output(convert_node.outputs['Vector'], link)
                 self.copy_input(convert_node.inputs[0],

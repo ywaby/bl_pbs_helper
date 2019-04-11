@@ -14,7 +14,6 @@
 # along with PBS Helper. If not, see <http://www.gnu.org/licenses/>.
 # TODO
 # 1. clear import
-# 2. only poll for shader node editor
 #
 import os
 from .preset import register as preset_register, unregister as preset_unregister
@@ -71,7 +70,6 @@ class Preferences(bpy.types.AddonPreferences):
         row.prop(self, "auto_save_image")
         row = layout.row()
 
-
 # ((id, name, dest),...) node group name==id
 PBS_NODE_TYPES = (('Build In', 'Build In', ''),
                   ('PBSH Emission Bake', 'PBSH Emission Bake', ''),
@@ -94,10 +92,11 @@ class FixData(Operator):
     bl_idname = "pbs_helper.fix_data"
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        return (obj and
-                obj.active_material and
-                context.area.type == "NODE_EDITOR")
+        space = context.space_data
+        return (space.type == 'NODE_EDITOR' and
+                space.tree_type == 'ShaderNodeTree' and
+                space.shader_type == 'OBJECT' and
+                space.node_tree)
 
     def execute(self, context):
         data_path = os.path.join(os.path.dirname(__file__), 'data.blend')
@@ -122,10 +121,11 @@ class AddPBSHplerNode(Operator):
 
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        return (obj and
-                obj.active_material and
-                context.area.type == "NODE_EDITOR")
+        space = context.space_data
+        return (space.type == 'NODE_EDITOR' and
+                space.tree_type == 'ShaderNodeTree' and
+                space.shader_type == 'OBJECT' and
+                space.node_tree)
 
     def execute(self, context):
         if self.node_type == 'Build In':
@@ -137,10 +137,14 @@ class AddPBSHplerNode(Operator):
         mat = obj.active_material
         tree = mat.node_tree
         nodes = tree.nodes
-        bpy.ops.node.add_node('INVOKE_DEFAULT',
+        if self.node_type=='PBSH Image Bake':
+            bpy.ops.node.add_node('INVOKE_DEFAULT',type="ShaderNodeTexImage")
+            node = nodes.active
+        else:
+            bpy.ops.node.add_node('INVOKE_DEFAULT',
                               type="ShaderNodeGroup",)
-        node = nodes.active
-        node.node_tree = bpy.data.node_groups[self.node_type]
+            node = nodes.active
+            node.node_tree = bpy.data.node_groups[self.node_type]
         node.pbs_node_type = self.node_type
         bpy.ops.node.translate_attach_remove_on_cancel('INVOKE_DEFAULT')
         return {'FINISHED'}
@@ -159,15 +163,13 @@ classes = [
 ]
 
 
-def bake_type_set(self, context):
-    obj = context.active_object
-    mat = obj.active_material
-    tree = mat.node_tree
-    nodes = tree.nodes
+def pbs_node_type_set(self, context):
+    nodes=context.active_node.id_data.nodes
     layout = self.layout
     node = nodes.active
-    row = layout.row()
-    row.prop(node, 'pbs_node_type')
+    if node.bl_idname == 'ShaderNodeGroup' or node.bl_idname =='ShaderNodeTexImage':
+        row = layout.row()
+        row.prop(node, 'pbs_node_type')
 
 def register():
     preset_register()
@@ -178,16 +180,14 @@ def register():
                                                       default='Build In')
     for cls in classes:
         bpy.utils.register_class(cls)
-    # bpy.types.NODE_MT_add.append(add_image_bake)
     bpy.types.NODE_MT_add.append(add_PBS_helper_nodes)
-    bpy.types.NODE_PT_active_node_properties.append(bake_type_set)
+    bpy.types.NODE_PT_active_node_properties.append(pbs_node_type_set)
 
 
 def unregister():
     bpy.types.ShaderNode.remove(pbs_node_type)
-    # bpy.types.NODE_MT_add.remove(add_image_bake)
     bpy.types.NODE_MT_add.remove(add_PBS_helper_nodes)
-    bpy.types.NODE_PT_active_node_properties.remove(bake_type_set)
+    bpy.types.NODE_PT_active_node_properties.remove(pbs_node_type_set)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
