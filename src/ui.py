@@ -28,21 +28,22 @@ from bpy.props import (
 )
 
 
-def add_image_bake(self, context):
-    bake_node = self.layout.operator('pbs_helper.add_image_bake',
-                                     text="Image Bake")
+# def add_image_bake(self, context):
+#     self.layout.operator('pbs_helper.add_image_bake',
+#                                      text="Image Bake")
 
 
-def is_image_bake(self, context):
-    obj = context.active_object
-    mat = obj.active_material
-    tree = mat.node_tree
-    nodes = tree.nodes
-    layout = self.layout
-    node = nodes.active
-    if node and node.bl_idname == 'ShaderNodeTexImage':
-        row = layout.row()
-        row.prop(node, 'is_image_bake')
+
+# def is_image_bake(self, context):
+#     obj = context.active_object
+#     mat = obj.active_material
+#     tree = mat.node_tree
+#     nodes = tree.nodes
+#     layout = self.layout
+#     node = nodes.active
+#     if node and node.bl_idname == 'ShaderNodeTexImage':
+#         row = layout.row()
+#         row.prop(node, 'is_image_bake')
 
 
 class PBS_HELPER_PT_panel(Panel):
@@ -57,6 +58,9 @@ class PBS_HELPER_PT_panel(Panel):
         layout = self.layout
         row = layout.row()
         row.operator("pbs_helper.bake")
+        row = layout.row()
+        row.operator("pbs_helper.fix_data")
+        
 
 
 

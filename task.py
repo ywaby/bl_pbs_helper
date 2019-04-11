@@ -4,7 +4,7 @@ import shutil
 import glob
 from pytk import BaseNode
 
-class install(BaseNode):
+class dev_install(BaseNode):
     """ln src and templete"""
     def action(self):
         src = os.path.abspath("src")
@@ -20,16 +20,16 @@ class install(BaseNode):
             os.remove(target)
         os.symlink(src, target)
 
-        src = os.path.abspath("./preset/pbs_helper")
+        src = os.path.abspath("./presets/pbs_helper")
         target = os.path.expanduser("~/.config//blender/2.80/scripts/presets/pbs_helper")
         if os.path.exists(target):
-            shutil.rmtree(target)
+            os.remove(target)
         os.symlink(src, target)        
 
 class clear(BaseNode):
     '''clear dist'''
     def action(self):
-        shutil.copytree('~/.config/blender/2.80/scripts/presets/pbs_helper/bake_type', './preset/pbs_helper/preset')
+        shutil.copytree('~/.config/blender/2.80/scripts/presets/pbs_helper/bake_type', './presets/pbs_helper/preset')
 
 class package(BaseNode):
     """package prject to release file (zip)"""
@@ -58,7 +58,7 @@ class package(BaseNode):
             tzip.close()
         shutil.move("texture_generate_templete.zip", "dist/pbs_helper/texture_generate_templete.zip")
         shutil.copyfile('./install.py','./dist/pbs_helper/install.py') # install.py
-        shutil.copytree('./preset', './dist/pbs_helper/preset') # preset
+        shutil.copytree('./presets', './dist/pbs_helper/presets') # preset
         # package all
         os.chdir('./dist') 
         files = glob.glob("./pbs_helper/**", recursive=True)
@@ -66,4 +66,4 @@ class package(BaseNode):
             for f in files:
                 tzip.write(f)
             tzip.close()
-        shutil.rmtree("./pbs_helper")
+        #shutil.rmtree("./pbs_helper") # remove code for test install

@@ -28,14 +28,6 @@ def add_presets(self, context):
     bake_node = self.layout.menu("PBS_HELPER_MT_preset", text='Bake Presets')
 
 
-class PBS_HELPER_MT_add_presets(Menu):
-    """preset menu by finding all preset files in the preset directory"""
-    bl_label = "Material Bake Presets"
-    preset_subdir = PRESET_SUBDIR
-    draw = Menu.draw_preset
-    preset_operator = 'pbs_helper.use_preset'  # run preset
-    preset_extensions = {'.blend'}
-
 class PBS_HELPER_PT_presets_manager(Panel):
     bl_space_type = 'NODE_EDITOR'
     bl_label = "Preset Manager"
@@ -198,7 +190,6 @@ class AddPreset(Operator):
 
 
 classes = [AddPreset,
-           PBS_HELPER_MT_add_presets,
            PBS_HELPER_MT_preset,
            PBS_HELPER_PT_presets_manager, 
            UsePreset]

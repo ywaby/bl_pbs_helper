@@ -33,30 +33,10 @@ from bpy.props import (
 from mathutils import Color, Vector
 import bpy
 
-
-class AddImageBake(Operator):
-    '''add godot bake preset'''
-    bl_label = "Add A Image Bake Node"  # 默认text，空格搜索命令
-    bl_idname = "pbs_helper.add_image_bake"  # id，脚本调用,必须为a.b的格式
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return (obj and
-                obj.active_material and
-                context.area.type == "NODE_EDITOR")
-
-    def execute(self, context):
-        bpy.ops.node.add_node('INVOKE_DEFAULT',
-                              type="ShaderNodeTexImage",
-                              use_transform=True,
-                              settings=[{"name": "is_image_bake", "value": "True"}])
-        return {"FINISHED"}
-
-
 class BakeMaterial(Operator):
     '''bake texture from a material'''
-    bl_label = "Bake A Material "  # 默认text，空格搜索命令
-    bl_idname = "pbs_helper.bake"  # id，脚本调用,必须为a.b的格式
+    bl_label = "Bake A Material"
+    bl_idname = "pbs_helper.bake"
 
     @classmethod
     def poll(cls, context):
@@ -66,6 +46,9 @@ class BakeMaterial(Operator):
                 context.scene.render.engine == 'CYCLES')
 
     def execute(self, context):
+        data_path = os.path.join(os.path.dirname(__file__), 'data.blend')  # TODO to be func load all
+        with bpy.data.libraries.load(data_path, link=True) as (data_from, data_to):
+            data_to.node_groups = data_from.node_groups
         self.obj = context.active_object
         self.orign_mat = self.obj.active_material
         self.mat = self.orign_mat.copy()
@@ -121,7 +104,7 @@ class BakeMaterial(Operator):
 
         if bake_socket.name == 'Normal' or bake_socket.name == 'Clearcoat Normal':
             if from_node.bl_idname == 'ShaderNodeMixShader':
-                convert_node = self.node_group_new('Normal Blend')
+                convert_node = self.node_group_new('PBSH Normal Blend')
                 copy_output(convert_node.outputs['Normal'], link)
                 self.copy_input(convert_node.inputs['Fac'],
                                 from_node.inputs['Fac'])
@@ -142,7 +125,7 @@ class BakeMaterial(Operator):
                 return
         elif bake_socket.type == 'VECTOR':
             if from_node.bl_idname == 'ShaderNodeMixShader':
-                convert_node = self.node_group_new('Normal Blend')
+                convert_node = self.node_group_new('PBSH Normal Blend') #TODO need a new node type vector mix with fac
                 copy_output(convert_node.outputs['Normal'], link)
                 self.copy_input(convert_node.inputs['Fac'],
                                 from_node.inputs['Fac'])
@@ -184,7 +167,7 @@ class BakeMaterial(Operator):
                 return
         elif bake_socket.type == 'VALUE':
             if from_node.bl_idname == 'ShaderNodeMixShader':
-                convert_node = self.node_group_new('Mix Value')
+                convert_node = self.node_group_new('PBSH Mix Value')
                 copy_output(convert_node.outputs['Value'], link)
                 self.copy_input(convert_node.inputs['Fac'],
                                 from_node.inputs['Fac'])
@@ -203,6 +186,7 @@ class BakeMaterial(Operator):
                 return
             else:
                 return
+        # TODO emission type
         for node_input in convert_node.inputs:
             for link in node_input.links:
                 self.tree_recurse_parse(bake_socket, link)
@@ -210,8 +194,7 @@ class BakeMaterial(Operator):
     def tree_parse(self):
         # Principled BSDF Bake
         shader_bake_nodes = [node for node in self.nodes
-                             if node.bl_idname == 'ShaderNodeGroup' and
-                             node.node_tree == bpy.data.node_groups['Principled BSDF Bake']]
+                             if node.pbs_node_type =='PBSH Principled BSDF Bake']
         for bake_node in shader_bake_nodes:
             for output in [output for output in bake_node.outputs if output.links]:
                 link = self.output_node.inputs[0].links[0]
@@ -220,8 +203,7 @@ class BakeMaterial(Operator):
         # displacement bake
         if self.output_node.inputs['Displacement'].links:
             shader_bake_nodes = [node for node in self.nodes
-                                 if node.bl_idname == 'ShaderNodeGroup' and
-                                 node.node_tree == bpy.data.node_groups['Displacement Bake']]
+                                 if node.pbs_node_type == 'PBSH Displacement Bake']
             for bake_node in shader_bake_nodes:
                 if not bake_node.outputs['Displacement'].links:
                     continue
@@ -231,8 +213,7 @@ class BakeMaterial(Operator):
 
     def bake_images(self):
         bake_image_nodes = [node for node in self.nodes
-                            if node.bl_idname == 'ShaderNodeTexImage' and
-                            node.is_bake_image]
+                            if node.pbs_node_type == 'PBSH Image Bake']
         emit_node = self.nodes.new('ShaderNodeEmission')
         self.links.new(emit_node.outputs['Emission'],
                        self.output_node.inputs['Surface'])
@@ -245,7 +226,7 @@ class BakeMaterial(Operator):
                     {'INFO'}, f'bake node "{bake_image_node.name}" missing image')
                 continue
             before_bake_node = bake_image_node.inputs[0].links[0].from_node
-            if before_bake_node == 'ShaderNodeGroup' and before_bake_node.node_tree == bpy.data.node_groups['Mix Alpha']:
+            if before_bake_node.pbs_node_type == 'PBSH Mix Alpha':
                 # bake color
                 self.copy_input(emit_node.inputs['Color'],
                                 before_bake_node.inputs['Color'])

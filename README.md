@@ -1,7 +1,8 @@
-PBS Helper is a blender2.8+ addon.  
-LICENES under LGPL3
+**PBS Helper** is a blender2.8+ addon.  
+is design for make blender to realtime render workflow smooth.  
+**LICENES under LGPL3**
 
-reference images
+<!-- reference images -->
 
 features
 - bake image from shader editor
@@ -16,16 +17,37 @@ design for smooth workflow
 - export asset to game engine
 - simple material
 
-
 improve render speed
 - disable modify
 - fast cycle render settings
 
 ## install
-install application templete
-install addon
+- application templete
+- addon
+- presets
 
-https://docs.blender.org/manual/en/latest/preferences/addons.html
+```sh
+blender --background -P install.py
+```
+
+purge uninstall
+```sh
+blender --background -P install.py -U
+```
+
+## usage
+templete
+image bake
+shader bake
+### add preset
+use preset img
+preset manager img
+add preset
+1. make ..
+2. make material
+3. add and name
+ovriwrite same name
+
 
 ## workflow
 ### generate pbr texture from image
@@ -43,10 +65,6 @@ composition workflow
 7.  regenerate texture
 
 ### PBR paint
-
-## install
-
-## usage
 
 
 ## support project
