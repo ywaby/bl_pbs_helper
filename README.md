@@ -70,6 +70,8 @@ composition workflow
 
 ### PBR paint
 
+## reference
+- [Blending in Detail](https://blog.selfshadow.com/publications/blending-in-detail/)
 
 ## support project
 blender market

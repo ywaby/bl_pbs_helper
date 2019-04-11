@@ -17,22 +17,16 @@
 
 from bpy.types import (
     Operator,
-    PropertyGroup,
-    AddonPreferences,
-    ShaderNodeGroup
+    ShaderNodeGroup,
+    Panel
 )
 from bpy.props import (
-    BoolProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
-    PointerProperty,
-    StringProperty,
 )
 from mathutils import Color, Vector
 import bpy
 import os
+
 
 class BakeMaterial(Operator):
     '''bake texture from a material'''
@@ -49,10 +43,11 @@ class BakeMaterial(Operator):
                 context.scene.render.engine == 'CYCLES')
 
     def execute(self, context):
-        obj=context.active_object
+        obj = context.active_object
         bpy.ops.object.select_all(action='DESELECT')
         obj.select_set(True)
-        data_path = os.path.join(os.path.dirname(__file__), 'data.blend')  # TODO to be func load all
+        data_path = os.path.join(os.path.dirname(
+            __file__), 'data.blend')  # TODO to be func load all
         with bpy.data.libraries.load(data_path, link=True) as (data_from, data_to):
             data_to.node_groups = data_from.node_groups
         self.obj = context.active_object
@@ -73,7 +68,7 @@ class BakeMaterial(Operator):
         return{'FINISHED'}
 
     def mix_alpha(self, merge_image, alpha_image):
-        pixels = list(merge_image.pixels)#[:]
+        pixels = list(merge_image.pixels)  # [:]
         alpha_pixels = alpha_image.pixels[:]
         for i in range(3, len(pixels), 4):  # TODO use numpy for faster
             pixels[i] = alpha_pixels[i-3]
@@ -120,7 +115,8 @@ class BakeMaterial(Operator):
                                 from_node.inputs[2], False)
             elif from_node.bl_idname == 'ShaderNodeBsdfPrincipled':
                 convert_node = self.nodes.new('ShaderNodeVectorMath')
-                convert_node.inputs[0].default_value = Vector((0.216, 0.216, 1.0))
+                convert_node.inputs[0].default_value = Vector(
+                    (0.216, 0.216, 1.0))
                 convert_node.inputs[1].default_value = Vector((0, 0, 0))
                 copy_output(convert_node.outputs['Vector'], link)
                 self.copy_input(convert_node.inputs[0],
@@ -132,7 +128,7 @@ class BakeMaterial(Operator):
                 return
         elif bake_socket.type == 'VECTOR':
             if from_node.bl_idname == 'ShaderNodeMixShader':
-                convert_node = self.node_group_new('PBSH Normal Blend') #TODO need a new node type vector mix with fac
+                convert_node = self.nodes.new('ShaderNodeMixRGB')
                 copy_output(convert_node.outputs['Normal'], link)
                 self.copy_input(convert_node.inputs['Fac'],
                                 from_node.inputs['Fac'])
@@ -201,7 +197,7 @@ class BakeMaterial(Operator):
     def tree_parse(self):
         # Principled BSDF Bake
         shader_bake_nodes = [node for node in self.nodes
-                             if node.pbs_node_type =='PBSH Principled BSDF Bake']
+                             if node.pbs_node_type == 'PBSH Principled BSDF Bake']
         for bake_node in shader_bake_nodes:
             for output in [output for output in bake_node.outputs if output.links]:
                 link = self.output_node.inputs[0].links[0]
@@ -229,8 +225,8 @@ class BakeMaterial(Operator):
             if not bake_image_node.inputs[0].links:
                 continue
             if not bake_image:
-                self.report(
-                    {'INFO'}, f'bake node "{bake_image_node.name}" missing image')
+                self.report({'INFO'}, 
+                            f'bake node "{bake_image_node.name}" missing image')
                 continue
             before_bake_node = bake_image_node.inputs[0].links[0].from_node
             if before_bake_node.pbs_node_type == 'PBSH Mix Alpha':
@@ -242,8 +238,11 @@ class BakeMaterial(Operator):
                 # bake alpha
                 self.copy_input(emit_node.inputs['Color'],
                                 before_bake_node.inputs['Alpha'])
-                alpha_tmp = bpy.data.images.new(
-                    'alpha.tmp', bake_image.size[0], bake_image.size[1], alpha=False, float_buffer=bake_image.is_float)
+                alpha_tmp = bpy.data.images.new('alpha.tmp',
+                                                bake_image.size[0],
+                                                bake_image.size[1],
+                                                alpha=False,
+                                                float_buffer=bake_image.is_float)
                 bake_alpha_node = self.nodes.new(type='ShaderNodeTexImage')
                 bake_alpha_node.image = alpha_tmp
                 self.nodes.active = bake_alpha_node
@@ -256,3 +255,144 @@ class BakeMaterial(Operator):
                                 bake_image_node.inputs[0])
                 self.nodes.active = bake_image_node
                 bpy.ops.object.bake(type='EMIT')
+
+
+# ((id, name, dest),...) node group name==id
+PBS_NODE_TYPES = (('Build In', 'Build In', ''),
+                  ('PBSH Emission Bake', 'PBSH Emission Bake', ''),
+                  ('PBSH Principled BSDF Bake', 'PBSH Principled BSDF Bake', ''),
+                  ('PBSH Displacement Bake', 'PBSH Displacement Bake', ''),
+                  ('PBSH Image Bake', 'PBSH Image Bake', ''),
+                  ('PBSH Mix Alpha', 'PBSH Mix Alpha', ''))
+
+PBS_NODE_ADD_TYPES = (
+    ('PBSH Emission Bake', 'PBSH Emission Bake', ''),
+    ('PBSH Principled BSDF Bake', 'PBSH Principled BSDF Bake', ''),
+    ('PBSH Displacement Bake', 'PBSH Displacement Bake', ''),
+    ('PBSH Image Bake', 'PBSH Image Bake', ''),
+    ('PBSH Mix Alpha', 'PBSH Mix Alpha', ''))
+
+
+class FixData(Operator):
+    '''add godot bake preset,fix broken link node group'''
+    bl_label = "fix Data"
+    bl_idname = "pbs_helper.fix_data"
+    @classmethod
+    def poll(cls, context):
+        space = context.space_data
+        return (space.type == 'NODE_EDITOR' and
+                space.tree_type == 'ShaderNodeTree' and
+                space.shader_type == 'OBJECT' and
+                space.node_tree)
+
+    def execute(self, context):
+        data_path = os.path.join(os.path.dirname(__file__), 'data.blend')
+        with bpy.data.libraries.load(data_path, link=True) as (data_from, data_to):
+            data_to.node_groups = data_from.node_groups
+        mats = context.materials
+        for mat in mats:
+            tree = mat.node_tree
+            nodes = tree.nodes
+            for node in nodes:
+                if node.pbs_node_type != 'Build In' and node.bl_idname == 'ShaderNodeGroup':
+                    node.node_tree = bpy.data.node_groups[node.pbs_node_type]
+        return {"FINISHED"}
+
+
+class AddPBSHplerNode(Operator):
+    bl_idname = 'pbs_helper.add_shader_bake_node'
+    bl_label = 'Add A PBS Helper Node'
+    node_type: EnumProperty(items=PBS_NODE_ADD_TYPES,
+                            default='PBSH Image Bake',
+                            name='PBS Node Type')
+
+    @classmethod
+    def poll(cls, context):
+        space = context.space_data
+        return (space.type == 'NODE_EDITOR' and
+                space.tree_type == 'ShaderNodeTree' and
+                space.shader_type == 'OBJECT' and
+                space.node_tree)
+
+    def execute(self, context):
+        if self.node_type == 'Build In':
+            return {'CANCELLED'}
+        data_path = os.path.join(os.path.dirname(
+            __file__), 'data.blend')  # TODO to be func load all
+        with bpy.data.libraries.load(data_path, link=True) as (data_from, data_to):
+            data_to.node_groups = data_from.node_groups
+        obj = context.active_object
+        mat = obj.active_material
+        tree = mat.node_tree
+        nodes = tree.nodes
+        if self.node_type == 'PBSH Image Bake':
+            bpy.ops.node.add_node('INVOKE_DEFAULT', type="ShaderNodeTexImage")
+            node = nodes.active
+        else:
+            bpy.ops.node.add_node('INVOKE_DEFAULT',
+                                  type="ShaderNodeGroup",)
+            node = nodes.active
+            node.node_tree = bpy.data.node_groups[self.node_type]
+        node.pbs_node_type = self.node_type
+        bpy.ops.node.translate_attach_remove_on_cancel('INVOKE_DEFAULT')
+        return {'FINISHED'}
+
+
+class PBS_HELPER_PT_tools(Panel):
+    '''material bake tools'''
+    bl_space_type = 'NODE_EDITOR'
+    bl_label = "PBS Helper"
+    bl_category = 'PBS Helper'
+    bl_region_type = 'UI'
+    #bl_options = {'HIDE_HEADER'}
+    COMPAT_ENGINES = {'CYCLES'}
+
+    def draw(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.operator("pbs_helper.bake")
+        row = layout.row()
+        row.operator("pbs_helper.fix_data")
+
+
+def pbs_node_type_set(self, context):
+    '''add pbs_node_type set to node properties'''
+    nodes = context.active_node.id_data.nodes
+    layout = self.layout
+    node = nodes.active
+    if node.bl_idname == 'ShaderNodeGroup' or node.bl_idname == 'ShaderNodeTexImage':
+        row = layout.row()
+        row.prop(node, 'pbs_node_type')
+
+
+def add_PBS_helper_nodes(self, context):
+    '''add PBSH node to shader editor -> add menu'''
+    self.layout.operator_menu_enum(AddPBSHplerNode.bl_idname,
+                                   "node_type",
+                                   text="Add PBS helper Nodes")
+
+
+classes = [
+    BakeMaterial,
+    AddPBSHplerNode,
+    PBS_HELPER_PT_tools,
+    FixData
+]
+
+
+def register():
+    bpy.types.ShaderNode.pbs_node_type = EnumProperty(items=PBS_NODE_TYPES,
+                                                      name='PBS Node Type',
+                                                      default='Build In')
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    bpy.types.NODE_MT_add.append(add_PBS_helper_nodes)
+    bpy.types.NODE_PT_active_node_properties.append(pbs_node_type_set)
+
+
+def unregister():
+    bpy.types.ShaderNode.remove(pbs_node_type)
+    bpy.types.NODE_MT_add.remove(add_PBS_helper_nodes)
+    bpy.types.NODE_PT_active_node_properties.remove(pbs_node_type_set)
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)

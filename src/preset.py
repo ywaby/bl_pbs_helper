@@ -3,20 +3,15 @@ from bl_operators.presets import AddPresetBase, ExecutePreset
 from bl_operators.presets import AddPresetBase
 from bpy.props import (
     BoolProperty,
-    EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
-    CollectionProperty
 )
 from bpy.types import (
     Operator,
     Menu,
     Panel,
-    PropertyGroup,
-    AddonPreferences,
 )
 import bpy
 import os
