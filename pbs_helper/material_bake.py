@@ -391,7 +391,7 @@ def register():
 
 
 def unregister():
-    bpy.types.ShaderNode.remove(pbs_node_type)
+    del bpy.types.ShaderNode.pbs_node_type
     bpy.types.NODE_MT_add.remove(add_PBS_helper_nodes)
     bpy.types.NODE_PT_active_node_properties.remove(pbs_node_type_set)
     for cls in reversed(classes):
