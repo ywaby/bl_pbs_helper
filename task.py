@@ -3,47 +3,47 @@ import os
 import shutil
 import glob
 from pytk import BaseNode
-
+os.path.exists
 class dev_uninstall(BaseNode):
     """remove src and templete link"""
     def action(self):
-        src = os.path.abspath("./pbs_helper_addon")
-        target = os.path.expanduser(
-            "~/.config/blender/2.80/scripts/addons/pbs_helper_addon")
-        if os.path.exists(target):
-            os.remove(target)
+        src = os.path.abspath("./pbs_helper")
+        dest = os.path.expanduser(
+            "~/.config/blender/2.80/scripts/addons/pbs_helper")
+        if os.path.exists(dest) or os.path.islink(dest):
+            os.remove(dest)
 
         src = os.path.abspath("./templete")
-        target = os.path.expanduser("~/.config//blender/2.80/scripts/startup/bl_app_templates_user/texture_generate_templete")
-        if os.path.exists(target):
-            os.remove(target)
+        dest = os.path.expanduser("~/.config/blender/2.80/scripts/startup/bl_app_templates_user/bitmap2tex_templete")
+        if os.path.exists(dest) or os.path.islink(dest):
+            os.remove(dest)
 
         src = os.path.abspath("./presets/pbs_helper")
-        target = os.path.expanduser("~/.config//blender/2.80/scripts/presets/pbs_helper")
-        if os.path.exists(target):
-            os.remove(target)
+        dest = os.path.expanduser("~/.config/blender/2.80/scripts/presets/pbs_helper")
+        if os.path.exists(dest) or os.path.islink(dest):
+            os.remove(dest)
 
 class dev_install(BaseNode):
     """ln src and templete"""
     def action(self):
-        src = os.path.abspath("./pbs_helper_addon")
-        target = os.path.expanduser(
-            "~/.config/blender/2.80/scripts/addons/pbs_helper_addon")
-        if os.path.exists(target):
-            os.remove(target)
-        os.symlink(src, target)
+        src = os.path.abspath("./pbs_helper")
+        dest = os.path.expanduser(
+            "~/.config/blender/2.80/scripts/addons/pbs_helper")
+        if os.path.exists(dest) or os.path.islink(dest):
+            os.remove(dest)
+        os.symlink(src, dest)
 
-        src = os.path.abspath("./templete")
-        target = os.path.expanduser("~/.config//blender/2.80/scripts/startup/bl_app_templates_user/texture_generate_templete")
-        if os.path.exists(target):
-            os.remove(target)
-        os.symlink(src, target)
+        src = os.path.abspath("./bitmap2tex_templete")
+        dest = os.path.expanduser("~/.config/blender/2.80/scripts/startup/bl_app_templates_user/bitmap2tex_templete")
+        if os.path.exists(dest) or os.path.islink(dest):
+            os.remove(dest)
+        os.symlink(src, dest)
 
         src = os.path.abspath("./presets/pbs_helper")
-        target = os.path.expanduser("~/.config//blender/2.80/scripts/presets/pbs_helper")
-        if os.path.exists(target):
-            os.remove(target)
-        os.symlink(src, target)        
+        dest = os.path.expanduser("~/.config/blender/2.80/scripts/presets/pbs_helper")
+        if os.path.exists(dest) or os.path.islink(dest):
+            os.remove(dest)
+        os.symlink(src, dest)        
 
 class clear(BaseNode):
     '''clear dist'''

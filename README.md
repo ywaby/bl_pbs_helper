@@ -6,10 +6,8 @@ is design for make blender to realtime render workflow smooth.
 
 features
 - bake image from shader editor
-- bake pbr image from shader editor
-- merge multi material to one
-- merge mesh to one
-- pbr paint helper
+- bake texture from a pbs material
+
 
 design for smooth workflow
 - pbr texture genarater.
@@ -17,65 +15,69 @@ design for smooth workflow
 - export asset to game engine
 - simple material
 
-improve render speed
-- disable modify
-- fast cycle render settings
-
 ## install
-- application templete
-- addon
-- presets
-
+### install
+1. [download](https://github.com/ywaby/bl_pbs_helper/releases)
+2. unzip pbs_helper.zip
+3. run script
 ```sh
+cd pbs_helper
 blender --background -P install.py
 ```
 
-purge uninstall
+Of course you can also install those documents manually.
+- presets
+- addon
+- templete
+
+
+### upgrade 
+install step again
+
+### purge uninstall
 ```sh
-blender --background -P install.py -U
+blender --background -P uninstall.py
 ```
 
 ## usage
-templete
+### templete
+![](./doc/assets/templete.png)
 
-image bake
+### image bake
+![add bake node](./doc/assets/add_bake_node.png)
+![image bake basic usage](./doc/assets/image_bake_base_usage.png)
+![shade bake usage](./doc/assets/use_bake_node.png)  
 
-shader bake
+press "Bake A Material" button   
+![panel](./doc/assets/panel.png)
+
+note: bake  need content scene render engine = cycles 
 
 ### preset
-use preset img
+use preset  
+![add preset](./doc/assets/add_preset.png)
 
-preset manager img
-add preset
-1. make ..
-2. make material
-3. add and name
-ovriwrite same name
+preset manager  
+![panel](./doc/assets/panel.png)
 
+add preset  
+1. make a node bake nodes
+2. new and name image
+3. make node group 
+4. make a result material
+5. add button in panel
+6. add name(same name will ovriwrite)
+7. select material and node group(defalut is active node)
 
-## workflow
-### generate pbr texture from image
-append generate scene
-
-选择图片，清晰，无方向光 repeat texture
-composition workflow
-1. init project
-2. save blend file
-3. edit bitmap image
-4. adjust material
-5. texture generate
-6. adjust texture 
-   1. paint basecolor with krita 
-7.  regenerate texture
-
-### PBR paint
+### tips 
+#### improve bake speed
+- disable non-essential modify
+- fast cycle render settings
 
 ## reference
 - [Blending in Detail](https://blog.selfshadow.com/publications/blending-in-detail/)
-
-## support project
-blender market
-spa
-itch.io
+- [unity standard shader](https://docs.unity3d.com/2019.1/Documentation/Manual/StandardShaderMetallicVsSpecular.html)
+- [unreal material](https://docs.unrealengine.com/en-us/Engine/Rendering/Materials/MaterialInputs)
 
 
+- https://texturehaven.com/tex/?t=medieval_blocks_05
