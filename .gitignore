@@ -108,7 +108,6 @@ venv.bak/
 tmp/
 *.blend[0-9]
 *.zip
-*.png
 .vscode/
 .pylintrc
 test/
