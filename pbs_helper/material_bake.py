@@ -29,7 +29,7 @@ import os
 
 
 class BakeMaterial(Operator):
-    '''bake texture from a material'''
+    '''Bake texture from a material,need cycles. '''
     bl_label = "Bake A Material"
     bl_idname = "pbs_helper.bake"
 
@@ -274,8 +274,8 @@ PBS_NODE_ADD_TYPES = (
 
 
 class FixData(Operator):
-    '''add godot bake preset,fix broken link node group'''
-    bl_label = "fix Data"
+    '''Add godot bake preset,fix broken link node group'''
+    bl_label = "Fix Data"
     bl_idname = "pbs_helper.fix_data"
     @classmethod
     def poll(cls, context):
@@ -287,6 +287,8 @@ class FixData(Operator):
 
     def execute(self, context):
         data_path = os.path.join(os.path.dirname(__file__), 'data.blend')
+        #rm orgin library
+        
         with bpy.data.libraries.load(data_path, link=True) as (data_from, data_to):
             data_to.node_groups = data_from.node_groups
         mats = context.materials
@@ -339,14 +341,19 @@ class AddPBSHplerNode(Operator):
 
 
 class PBS_HELPER_PT_tools(Panel):
-    '''material bake tools'''
+    '''Material bake tools'''
     bl_space_type = 'NODE_EDITOR'
     bl_label = "PBS Helper"
     bl_category = 'PBS Helper'
     bl_region_type = 'UI'
     #bl_options = {'HIDE_HEADER'}
     COMPAT_ENGINES = {'CYCLES'}
-
+    @classmethod
+    def poll(cls, context):
+        space = context.space_data
+        return (space.type == 'NODE_EDITOR' and
+                space.tree_type == 'ShaderNodeTree' and
+                space.shader_type == 'OBJECT')
     def draw(self, context):
         layout = self.layout
         row = layout.row()
@@ -356,7 +363,7 @@ class PBS_HELPER_PT_tools(Panel):
 
 
 def pbs_node_type_set(self, context):
-    '''add pbs_node_type set to node properties'''
+    '''Add pbs_node_type set to node properties'''
     nodes = context.active_node.id_data.nodes
     layout = self.layout
     node = nodes.active
@@ -366,10 +373,15 @@ def pbs_node_type_set(self, context):
 
 
 def add_PBS_helper_nodes(self, context):
-    '''add PBSH node to shader editor -> add menu'''
-    self.layout.operator_menu_enum(AddPBSHplerNode.bl_idname,
+    '''Add PBSH node to shader editor -> add menu'''
+    space = context.space_data
+    if (space.type == 'NODE_EDITOR' and
+        space.tree_type == 'ShaderNodeTree' and
+        space.shader_type == 'OBJECT' and
+        space.node_tree):
+        self.layout.operator_menu_enum(AddPBSHplerNode.bl_idname,
                                    "node_type",
-                                   text="Add PBS helper Nodes")
+                                   text="PBS helper Nodes")
 
 
 classes = [

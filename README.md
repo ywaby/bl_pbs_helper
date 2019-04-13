@@ -79,5 +79,4 @@ add preset
 - [unity standard shader](https://docs.unity3d.com/2019.1/Documentation/Manual/StandardShaderMetallicVsSpecular.html)
 - [unreal material](https://docs.unrealengine.com/en-us/Engine/Rendering/Materials/MaterialInputs)
 
-
-- https://texturehaven.com/tex/?t=medieval_blocks_05
+texture from [texturehaven](https://texturehaven.com/tex/?c=metal&t=metal_plate)

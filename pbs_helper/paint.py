@@ -38,7 +38,7 @@ from bpy.props import (
 
 
 class Paint2Node(Operator):
-    '''sync paint texture with active node'''
+    '''Sync paint texture with active node'''
     bl_idname = "pbs_helper.paint2node"
     bl_label = "Paint to Active Node"
     custom_event: bpy.props.EnumProperty(

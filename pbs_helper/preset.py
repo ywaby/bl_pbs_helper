@@ -20,10 +20,16 @@ PRESET_SUBDIR = "pbs_helper/bake_type"
 
 
 def add_presets(self, context):
-    bake_node = self.layout.menu("PBS_HELPER_MT_preset", text='Bake Presets')
+    space = context.space_data
+    if (space.type == 'NODE_EDITOR' and
+        space.tree_type == 'ShaderNodeTree' and
+        space.shader_type == 'OBJECT' and
+            space.node_tree):
+        self.layout.menu("PBS_HELPER_MT_preset", text='Bake Presets')
 
 
 class PBS_HELPER_PT_presets_manager(Panel):
+    '''Presets Manager'''
     bl_space_type = 'NODE_EDITOR'
     bl_label = "Preset Manager"
     bl_category = 'PBS Helper'
@@ -36,9 +42,7 @@ class PBS_HELPER_PT_presets_manager(Panel):
         space = context.space_data
         return (space.type == 'NODE_EDITOR' and
                 space.tree_type == 'ShaderNodeTree' and
-                space.shader_type == 'OBJECT' and
-                space.node_tree)
-
+                space.shader_type == 'OBJECT')
     def draw(self, context):
         files = []
         search_paths = bpy.utils.preset_paths(self.preset_subdir)
@@ -53,14 +57,15 @@ class PBS_HELPER_PT_presets_manager(Panel):
         for f in files:
             row = box.row(align=True)
             row.label(text=f)
-            del_ops = row.operator(
-                'pbs_helper.preset_add', text='', icon='REMOVE')
+            del_ops = row.operator('pbs_helper.preset_add',
+                                   text='',
+                                   icon='REMOVE')
             del_ops.remove_active = True
             del_ops.name = f
 
 
 class PBS_HELPER_MT_preset(Menu):
-    """preset menu by finding all preset files in the preset directory"""
+    """Preset menu by finding all preset files in the preset directory"""
     bl_label = "Material Bake Presets"
     preset_subdir = PRESET_SUBDIR
     draw = Menu.draw_preset
@@ -69,6 +74,7 @@ class PBS_HELPER_MT_preset(Menu):
 
 
 class UsePreset(ExecutePreset):
+    '''Add preset to current node tree'''
     bl_idname = "pbs_helper.use_preset"
     bl_label = "Execute a Python Preset"
 
@@ -109,7 +115,7 @@ class UsePreset(ExecutePreset):
 
 
 class AddPreset(Operator):
-    """add preset to library"""
+    """Add/Remove preset to library"""
     bl_label = "Add Preset"
     bl_idname = "pbs_helper.preset_add"
     preset_subdir = PRESET_SUBDIR
